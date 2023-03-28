@@ -1,0 +1,293 @@
+he video version of this document is available on https://youtu.be/9S3APcmAql8 , where we are explaining the concept and procedures in details
+
+
+
+( commands are in blue letters ) 
+
+
+
+Note: You need NOT upgrade Ubuntu from 20+ to 22+ for upgrading ERPNext to Version 14. EPRNext and Frappe 14 works both on Ubuntu 20+ and 22+ )
+
+
+
+1- Take backup. ( Should I explain that !!! ) 
+
+
+
+2- Make sure you don't have any customization those are not committed.
+
+cd /opt/bench/frappe-bench/apps/erpnext
+
+git status
+
+Refresh index: 100% (6953/6953), done.
+
+On branch version-13
+
+Your branch is up to date with 'upstream/version-13'.
+
+nothing to commit, working tree clean
+
+
+
+/opt/bench/frappe-bench/apps/frappe
+
+git status
+
+On branch version-13
+
+Your branch is up to date with 'upstream/version-13'.
+
+nothing to commit, working tree clean
+
+
+
+3-Check python version
+
+python3 -V 
+
+Python 3.8.10 ( needs to be upgraded to 3.10 )
+
+
+
+4-check node version.
+
+node --version
+
+v12.22.12 ( needs to be upgraded to v16.X )
+
+
+
+5-Check pip or pip3 version
+
+pip3 --version 
+
+20.2 ( needs to be upgrade to 22.x )
+
+
+
+
+
+6- Upgrade python
+
+sudo apt install software-properties-common -y
+
+sudo add-apt-repository ppa:deadsnakes/ppa
+
+sudo apt install python3.10 python3.10-dev python3.10-distutils
+
+
+
+Confirm python version upgrade by
+
+python3.10 --version
+
+Python 3.10.6
+
+
+
+Make Python 3.10 the default.
+
+sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
+
+
+
+Make sure python command executes python3
+
+sudo apt install python-is-python3
+
+
+
+python -V
+
+Python 3.10.6
+
+
+
+python3 -V
+
+Python 3.10.6
+
+
+
+
+
+7 - Upgrade PIP
+
+ 
+
+curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10
+
+pip install html5lib
+
+pip3 install --upgrade pip
+
+sudo apt-get remove python3-apt -y
+
+sudo apt-get install python3-apt -y
+
+
+
+check PIP verison and confirm.
+
+pip --version
+
+pip 22.2.2 from /home/erpnext/.local/lib/python3.10/site-packages/pip (python 3.10)
+
+pip3 --version
+
+pip 22.2.2 from /home/erpnext/.local/lib/python3.10/site-packages/pip (python 3.10)
+
+
+
+8- Upgrade Node
+
+curl -sL https://deb.nodesource.com/setup_16.x | bash -
+
+apt-get install nodejs redis-server -y
+
+
+
+check node version and confirm
+
+node --version
+
+v16.17.0
+
+
+
+9- Upgrade NPM
+
+npm upgrade
+
+sudo npm install 16
+
+sudo npm install -g npm@8.19.1
+
+
+
+check npm version and confirm
+
+npm --version
+
+8.19.1
+
+
+
+
+
+10 -Move your old python env folder to env-archive, in-case anything goes wrong, you can return to the original
+
+
+
+cd /opt/bench/frappe-bench/
+
+mv env env-archive
+
+----
+
+
+
+11- Create new virtual env for python-3.10
+
+pip install virtualenv
+
+virtualenv --python python3.10 env
+
+env/bin/pip install -U pip
+
+
+
+12- Change git upstream from V13 to V14
+
+
+
+env/bin/pip install -e apps/frappe -e apps/erpnext
+
+pip3 install frappe-bench 
+
+bench switch-to-branch frappe erpnext version-14 ( edited this line. Please see the note 2 ** ) 
+
+( If the above command don't work, use this one )  bench switch-to-branch version-14 frappe erpnext --upgrade 
+
+
+
+check upstream and make sure upstream repository is V14
+
+cd /opt/bench/frappe-bench/apps/erpnext
+
+git status
+
+Your branch is up to date with 'upstream/version-14'.
+
+
+
+cd /opt/bench/frappe-bench/apps/frappe
+
+git status
+
+Your branch is up to date with 'upstream/version-14'.
+
+
+
+13- Install and upgrade V14. Please note that monolith is broken on V14 and you must install payments and hrms module in addition to ERPNext
+
+
+
+bench get-app payments
+
+bench get-app hrms
+
+bench update --reset
+
+bench --site *sitename* install-app hrms
+
+bench --site *sitename* install-app payments
+
+bench --site v13.erpgulf.com migrate
+
+
+
+sudo service supervisor restart
+
+sudo service nginx restart
+
+
+
+That is it. Check whether you ERPNext and Frappe upgrade to V14
+
+
+
+
+
+-------------
+
+Note 1: *
+
+If you face problem with nginx because of log type error ( log type main not found or something like that ) 
+
+vvim /etc/nginx/nginx.conf and add following on http section.
+
+
+
+log_format main '$remote_addr - $remote_user [$time_local] "$request" ' '$status $body_bytes_sent "$http_referer" ' '"$http_user_agent" "$http_x_forwarded_for"';
+
+﻿
+
+-----------------------
+
+Note:2 **
+
+
+
+Note from ( https://discuss.erpnext.com/u/flexy2ky ) 
+
+modify this command in your document:
+
+bench switch-to-branch version-14
+
+As this command will fail if the site has custom apps installed because the command will try to switch the apps to version-14 as well. so the command should be:
+
+bench switch-to-branch frappe erpnext version-14
+
+This ensures that the switch-to-branch command only affects frappe and erpnext and ignores any other installed app.
